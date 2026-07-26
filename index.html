@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Simtec AU — Arrears Follow-ups</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+  :root{--navy:#122347;--gold:#c6a15b;--ink:#1a2334;--sub:#6b7889;--line:#e6ebf2;--bg:#eef2f7;--red:#b3261e;--amber:#a9700a;--green:#1c6b34;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;font-size:14px}
+  header{background:var(--navy);color:#fff;padding:12px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  header .brand{font-weight:800;letter-spacing:2px}
+  header .tag{font-size:12px;color:#aab8d4}
+  header .spacer{flex:1}
+  header .who{font-size:12.5px;color:#cdd8ee}
+  .tabs{display:flex;gap:6px;margin-left:auto}
+  .tab{background:rgba(255,255,255,.08);color:#dfe7f5;border:none;padding:7px 14px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer}
+  .tab.on{background:var(--gold);color:#1a2438}
+  .btn{background:var(--navy);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer}
+  .btn.g{background:var(--gold);color:#1a2438}
+  .btn.ghost{background:#fff;color:var(--navy);border:1px solid #cbd4df}
+  .btn.sm{padding:5px 10px;font-size:12px;border-radius:7px}
+  .wrap{max-width:1180px;margin:0 auto;padding:18px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
+  .drop{border:2px dashed #c3cede;border-radius:12px;padding:26px;text-align:center;color:var(--sub);cursor:pointer;background:#f8fafc}
+  .drop.busy{opacity:.7}
+  input[type=file]{display:none}
+  .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:6px}
+  .tile{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px}
+  .tile .n{font-size:26px;font-weight:800;color:var(--navy);font-variant-numeric:tabular-nums}
+  .tile .l{font-size:12px;color:var(--sub);text-transform:uppercase;letter-spacing:.4px;font-weight:700;margin-top:2px}
+  .tile.red .n{color:var(--red)} .tile.amber .n{color:var(--amber)}
+  .controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:4px 0 12px}
+  .controls input[type=text],.controls input[type=number]{padding:8px 10px;border:1px solid #cbd4df;border-radius:8px;font-size:13px}
+  table{width:100%;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden}
+  th,td{padding:9px 11px;text-align:left;border-bottom:1px solid var(--line);font-size:13px;vertical-align:top}
+  th{background:#f3f6fb;color:var(--sub);text-transform:uppercase;font-size:11px;letter-spacing:.4px;position:sticky;top:0}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+  tr.done{opacity:.5}
+  .pill{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px}
+  .pill.grey{background:#eef1f6;color:#5a6b8c}.pill.red{background:#fbe9e7;color:#b3261e}.pill.amber{background:#fdf1dd;color:#8a5a06}.pill.green{background:#e5f3ea;color:#1c6b34}
+  .muted{color:var(--sub)}
+  .name{font-weight:700}
+  .sub{font-size:11.5px;color:var(--sub)}
+  .ov{position:fixed;inset:0;background:rgba(10,18,36,.55);display:none;align-items:center;justify-content:center;padding:16px;z-index:60}
+  .ov.show{display:flex}
+  .modal{background:#fff;border-radius:14px;padding:20px;max-width:440px;width:100%}
+  .modal h3{margin:0 0 4px} label{font-size:12.5px;font-weight:600;color:var(--sub);display:block;margin:12px 0 4px}
+  select,textarea{width:100%;padding:9px 10px;border:1px solid #cbd4df;border-radius:8px;font-size:14px;font-family:inherit}
+  .login{max-width:380px;margin:8vh auto;padding:26px;background:#fff;border:1px solid var(--line);border-radius:16px}
+  .login h1{font-size:19px;margin:0 0 2px;color:var(--navy)} .login .tag{color:var(--sub);font-size:13px;margin-bottom:16px}
+  .login input{width:100%;padding:11px 12px;border:1px solid #cbd4df;border-radius:9px;font-size:15px;margin-bottom:10px}
+  .err{background:#fbe9e7;border:1px solid #f2c4bd;color:#8a2018;border-radius:9px;padding:10px 12px;font-size:13px;margin:8px 0}
+  .banner{background:#fdf6e6;border:1px solid #e8d199;color:#7a5a10;border-radius:10px;padding:12px 14px;font-size:13px;margin-bottom:14px}
+  @media(max-width:720px){.tiles{grid-template-columns:repeat(2,1fr)}.hideSm{display:none}}
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN ============ -->
+<div id="loginView">
+  <div class="login">
+    <h1>Simtec AU — Follow-ups</h1>
+    <div class="tag">Arrears follow-up &amp; contact log</div>
+    <div id="cfgWarn" class="banner" hidden>Not connected yet — the database details still need to be added. See the setup guide.</div>
+    <div id="loginErr" class="err" hidden></div>
+    <input type="email" id="email" placeholder="Email" autocomplete="username">
+    <input type="password" id="pw" placeholder="Password" autocomplete="current-password">
+    <button class="btn g" style="width:100%;padding:12px" onclick="doLogin()">Sign in</button>
+  </div>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="appView" hidden>
+  <header>
+    <span class="brand">SIMTEC</span><span class="tag">AU Follow-ups</span>
+    <div class="tabs">
+      <button class="tab on" id="tabFollow" onclick="showTab('follow')">Follow-ups</button>
+      <button class="tab" id="tabActivity" onclick="showTab('activity')">Activity</button>
+    </div>
+    <span class="spacer"></span>
+    <span class="who" id="who"></span>
+    <button class="tab" onclick="doLogout()">Sign out</button>
+  </header>
+
+  <div class="wrap">
+    <!-- FOLLOW-UPS TAB -->
+    <div id="followTab">
+      <div class="card">
+        <div class="drop" id="drop">
+          <b>Click to choose today's Ezidebit report</b><br>
+          <span class="muted">the <b>Processed Payments Report</b> PDF — or drag it here. It's read on this computer and never uploaded.</span>
+          <input type="file" id="file" accept="application/pdf">
+        </div>
+        <div id="parseMsg" class="muted" style="margin-top:10px"></div>
+      </div>
+
+      <div id="results" hidden>
+        <div class="tiles">
+          <div class="tile"><div class="n" id="t_active">–</div><div class="l">Active customers</div></div>
+          <div class="tile red"><div class="n" id="t_behind">–</div><div class="l">Behind</div></div>
+          <div class="tile amber"><div class="n" id="t_arrears">–</div><div class="l">Total behind ($)</div></div>
+          <div class="tile"><div class="n" id="t_done">–</div><div class="l">Contacted</div></div>
+        </div>
+        <div class="controls">
+          <input type="text" id="search" placeholder="Search name or ID…" oninput="render()">
+          <label style="font-weight:600;color:var(--sub)"><input type="checkbox" id="activeOnly" checked onchange="render()"> Active only</label>
+          <span class="muted">Min $ behind</span><input type="number" id="minArr" value="0" style="width:90px" oninput="render()">
+          <label style="font-weight:600;color:var(--sub)"><input type="checkbox" id="hideDone" onchange="render()"> Hide contacted</label>
+          <span class="spacer" style="flex:1"></span>
+          <button class="btn ghost sm" onclick="exportFollow()">Export CSV</button>
+        </div>
+        <div class="banner" id="periodBanner" hidden></div>
+        <table id="tbl"><thead><tr>
+          <th>#</th><th>Customer</th><th class="num">Behind</th><th class="num hideSm">Instal</th>
+          <th class="hideSm">Freq</th><th class="num hideSm">Paid%</th><th class="num">Missed<br>in a row</th>
+          <th class="hideSm">Last paid</th><th>Follow-up</th>
+        </tr></thead><tbody id="rows"></tbody></table>
+      </div>
+    </div>
+
+    <!-- ACTIVITY TAB -->
+    <div id="activityTab" hidden>
+      <div class="tiles">
+        <div class="tile"><div class="n" id="a_today">–</div><div class="l">Contacts today</div></div>
+        <div class="tile"><div class="n" id="a_week">–</div><div class="l">This week</div></div>
+        <div class="tile"><div class="n" id="a_total">–</div><div class="l">All time</div></div>
+        <div class="tile"><div class="n" id="a_people">–</div><div class="l">People contacted</div></div>
+      </div>
+      <div class="controls">
+        <input type="text" id="aSearch" placeholder="Search…" oninput="renderActivity()">
+        <span class="muted">By</span>
+        <select id="aWho" style="padding:8px;border:1px solid #cbd4df;border-radius:8px" onchange="renderActivity()"><option value="">Everyone</option></select>
+        <span class="spacer" style="flex:1"></span>
+        <button class="btn ghost sm" onclick="loadContacts().then(renderActivity)">Refresh</button>
+        <button class="btn ghost sm" onclick="exportActivity()">Export CSV</button>
+      </div>
+      <table><thead><tr>
+        <th>When</th><th>By</th><th>Customer</th><th class="hideSm">Payer ID</th>
+        <th>Outcome</th><th class="num">Behind</th><th>Note</th>
+      </tr></thead><tbody id="aRows"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- ============ LOG CONTACT MODAL ============ -->
+<div class="ov" id="ov"><div class="modal">
+  <h3 id="mName">Log contact</h3>
+  <div class="sub" id="mSub"></div>
+  <label>Outcome</label>
+  <select id="mOutcome">
+    <option>Promised to pay</option>
+    <option>Payment arrangement made</option>
+    <option>Paid over phone</option>
+    <option>No answer</option>
+    <option>Left message / voicemail</option>
+    <option>Wrong or disconnected number</option>
+    <option>Hardship / needs review</option>
+    <option>Dispute</option>
+    <option>Refuses to pay</option>
+    <option>Other</option>
+  </select>
+  <label>Note (optional)</label>
+  <textarea id="mNote" rows="3" placeholder="e.g. will pay $200 Friday, call back Mon"></textarea>
+  <div style="display:flex;gap:10px;margin-top:16px">
+    <button class="btn g" style="flex:1" id="mSave" onclick="saveContact()">Save contact</button>
+    <button class="btn ghost" onclick="closeOv()">Cancel</button>
+  </div>
+</div></div>
+
+<script>
+/* ============================================================================
+   Simtec AU — Arrears Follow-ups
+   - The PDF is read and analysed entirely IN THIS BROWSER (pdf.js). No customer
+     payment data ever leaves the computer or is stored anywhere.
+   - Only the lightweight CONTACT LOG (who was called, when, outcome, note) is
+     saved to a small SEPARATE Supabase project — isolated from the NZ system —
+     so Nigel can monitor Cherelee's workload live. Logins gate access.
+   ---------------------------------------------------------------------------
+   SETUP (one time): paste your NEW AU Supabase project's URL + publishable
+   (anon) key below, run au-followups-schema.sql in that project, and create a
+   login for each of you. See AU-FOLLOWUPS-SETUP.md.
+   ========================================================================== */
+const AU_SUPABASE_URL = "https://ftzxndwjghteklcrpfus.supabase.co";
+const AU_SUPABASE_KEY = "sb_publishable_ri6UIu8XFEifY5FMHeejZQ_A2Mi5tcq";
+
+const configured = !AU_SUPABASE_URL.startsWith("PASTE_") && !AU_SUPABASE_KEY.startsWith("PASTE_");
+let sb=null;
+if(configured){ sb = supabase.createClient(AU_SUPABASE_URL, AU_SUPABASE_KEY); }
+pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+const $=id=>document.getElementById(id);
+const money=n=>"$"+Math.round(Number(n)||0).toLocaleString("en-AU");
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let ME=null, CUSTOMERS=[], CONTACTS=[], LATEST={}, REPORT_END=null;
+
+/* ---------------- AUTH ---------------- */
+async function boot(){
+  if(!configured){ $("cfgWarn").hidden=false; return; }
+  const {data:{session}}=await sb.auth.getSession();
+  if(session){ ME=session.user; enterApp(); }
+}
+async function doLogin(){
+  $("loginErr").hidden=true;
+  if(!configured){ $("cfgWarn").hidden=false; return; }
+  const {data,error}=await sb.auth.signInWithPassword({email:$("email").value.trim(),password:$("pw").value});
+  if(error){ $("loginErr").textContent=error.message; $("loginErr").hidden=false; return; }
+  ME=data.user; enterApp();
+}
+async function doLogout(){ if(sb) await sb.auth.signOut(); location.reload(); }
+function enterApp(){
+  $("loginView").hidden=true; $("appView").hidden=false;
+  $("who").textContent=ME.email;
+  loadContacts().then(()=>{ render(); renderActivity(); });
+}
+
+/* ---------------- PDF READ + PARSE ---------------- */
+$("drop").addEventListener("click",()=>$("file").click());
+$("file").addEventListener("change",e=>{ if(e.target.files[0]) handleFile(e.target.files[0]); });
+["dragover","dragleave","drop"].forEach(ev=>$("drop").addEventListener(ev,e=>{e.preventDefault();
+  if(ev==="drop"&&e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);}));
+
+async function handleFile(file){
+  if(file.type!=="application/pdf"){ $("parseMsg").textContent="Please choose a PDF file."; return; }
+  $("drop").classList.add("busy");
+  try{
+    const recs=await parsePdf(file, (p,n)=>{ $("parseMsg").textContent=`Reading page ${p} of ${n}…`; });
+    if(!recs.length){ $("parseMsg").innerHTML="<span style='color:#b3261e'>No payment transactions found. Make sure this is the Ezidebit <b>Processed Payments Report</b>.</span>"; return; }
+    CUSTOMERS=computeArrears(recs);
+    $("parseMsg").textContent=`Read ${recs.length.toLocaleString()} transactions across ${new Set(recs.map(r=>r.pid)).size} customers.`;
+    $("results").hidden=false;
+    render();
+  }catch(err){ $("parseMsg").innerHTML="<span style='color:#b3261e'>Couldn't read that PDF: "+esc(err.message||err)+"</span>"; }
+  finally{ $("drop").classList.remove("busy"); }
+}
+
+async function parsePdf(file, onProgress){
+  const buf=await file.arrayBuffer();
+  const pdf=await pdfjsLib.getDocument({data:buf}).promise;
+  const N=pdf.numPages; const recs=[];
+  const dateRe=/^(\d{2})\/(\d{2})\/(\d{4})/;
+  const payerRe=/(\d{3}-\d{3}-\d{3})/;
+  const moneyRe=/-?\$[\d,]+\.\d{2}/g;
+  for(let p=1;p<=N;p++){
+    if(onProgress && (p%20===0||p===1||p===N)) onProgress(p,N);
+    const page=await pdf.getPage(p);
+    const c=await page.getTextContent();
+    // read period end from page 1
+    if(p===1){
+      const all=c.items.map(i=>i.str).join(" ");
+      const m=all.match(/for period\s+\d{2}\/\d{2}\/\d{4}\s+to\s+(\d{2})\/(\d{2})\/(\d{4})/i)
+           || all.match(/for settlement on\s+(\d{2})\/(\d{2})\/(\d{4})/i);
+      if(m) REPORT_END=new Date(+m[3],+m[2]-1,+m[1]);
+    }
+    // reconstruct visual lines by y
+    const lines={};
+    for(const it of c.items){ const y=Math.round(it.transform[5]); (lines[y]=lines[y]||[]).push(it); }
+    for(const y of Object.keys(lines)){
+      const items=lines[y].sort((a,b)=>a.transform[4]-b.transform[4]);
+      const line=items.map(i=>i.str).join(" ").replace(/\s+/g," ").trim();
+      const dm=line.match(dateRe); if(!dm) continue;
+      if(!/\b(Paid|Failed)\b/.test(line)) continue;
+      const pm=line.match(payerRe); if(!pm) continue;
+      const result=/\bFailed\b/.test(line)?"Failed":"Paid";
+      const ms=line.match(moneyRe)||[]; if(!ms.length) continue;
+      const vals=ms.map(x=>parseFloat(x.replace(/[$,]/g,"")));
+      const amt=vals.length>=3?vals[vals.length-3]:vals[0];
+      // name = between payer id and result word, strip trailing CONTRACTREF
+      let name="";
+      const after=line.slice(line.indexOf(pm[1])+pm[1].length);
+      const nmatch=after.match(/^(.*?)\s+(Paid|Failed)\b/);
+      if(nmatch){ name=nmatch[1].trim()
+        .replace(/\s+[A-Z0-9]*\d[A-Z0-9]*$/,"")   // strip trailing token containing digits (contract ref)
+        .replace(/\s+[A-Z]{4,}$/,"").trim(); }
+      recs.push({pid:pm[1], date:new Date(+dm[3],+dm[2]-1,+dm[1]), result, amt:amt||0, name});
+    }
+  }
+  return recs;
+}
+
+/* ---------------- ARREARS MODEL (schedule vs paid) ---------------- */
+function median(a){ if(!a.length) return 0; const s=[...a].sort((x,y)=>x-y); const m=s.length>>1; return s.length%2?s[m]:(s[m-1]+s[m])/2; }
+function computeArrears(recs){
+  const NOW=REPORT_END||new Date(Math.max(...recs.map(r=>r.date)));
+  const by={};
+  for(const r of recs){ (by[r.pid]=by[r.pid]||[]).push(r); }
+  const DAY=86400000; const out=[];
+  for(const pid of Object.keys(by)){
+    const evs=by[pid].sort((a,b)=>a.date-b.date);
+    const first=evs[0].date, last=evs[evs.length-1].date;
+    const paidAmts=evs.filter(e=>e.result==="Paid"&&e.amt>0).map(e=>e.amt);
+    const allAmts=evs.filter(e=>e.amt>0).map(e=>e.amt);
+    const instal=paidAmts.length?median(paidAmts):median(allAmts);
+    const gaps=[]; for(let i=1;i<evs.length;i++){ const g=Math.round((evs[i].date-evs[i-1].date)/DAY); if(g>0)gaps.push(g); }
+    const g=median(gaps); const pdays=g<=10?7:(g<=20?14:30); const flabel=g<=10?"weekly":(g<=20?"fortnightly":"monthly");
+    const span=Math.round((last-first)/DAY);
+    const periods=instal>0?Math.floor(span/pdays)+1:0;
+    const expected=instal*periods;
+    const paidsum=paidAmts.reduce((s,x)=>s+x,0);
+    const arrears=Math.max(0,expected-paidsum);
+    let streak=0; for(let i=evs.length-1;i>=0;i--){ if(evs[i].result==="Failed")streak++; else break; }
+    const lastPaid=[...evs].reverse().find(e=>e.result==="Paid");
+    const bestName=(()=>{ let b=""; for(const e of evs){ if(e.name && e.name.length>b.length) b=e.name; } return b||pid; })();
+    out.push({pid,name:bestName,instal,freq:flabel,weeks:span/7,periods,expected,
+      paid:paidsum,arrears,pctColl:expected>0?Math.round(paidsum/expected*100):0,
+      streak,fails:evs.filter(e=>e.result==="Failed").length,pays:paidAmts.length,
+      active:Math.round((NOW-last)/DAY)<=45,
+      lastPaid:lastPaid?lastPaid.date:null, daysSincePaid:lastPaid?Math.round((NOW-lastPaid.date)/DAY):null});
+  }
+  return out.sort((a,b)=>b.arrears-a.arrears);
+}
+
+/* ---------------- CONTACTS (shared Supabase) ---------------- */
+async function loadContacts(){
+  if(!sb){ CONTACTS=[]; LATEST={}; return; }
+  const {data,error}=await sb.from("au_contacts").select("*").order("created_at",{ascending:false});
+  if(error){ console.warn(error.message); return; }
+  CONTACTS=data||[]; LATEST={};
+  for(const c of CONTACTS){ if(!LATEST[c.payer_id]) LATEST[c.payer_id]=c; } // first = most recent
+  // populate activity 'by' filter
+  const who=$("aWho"); const have=new Set([...who.options].map(o=>o.value));
+  [...new Set(CONTACTS.map(c=>c.contacted_by))].forEach(w=>{ if(w&&!have.has(w)){ const o=document.createElement("option");o.value=w;o.textContent=w;who.appendChild(o);} });
+}
+
+/* ---------------- RENDER: FOLLOW-UPS ---------------- */
+function render(){
+  if(!CUSTOMERS.length){ return; }
+  const q=($("search").value||"").toLowerCase();
+  const actOnly=$("activeOnly").checked, hideDone=$("hideDone").checked;
+  const minArr=parseFloat($("minArr").value)||0;
+  const behind=CUSTOMERS.filter(c=>c.arrears>=Math.max(c.instal,1)&&(!actOnly||c.active));
+  $("t_active").textContent=CUSTOMERS.filter(c=>c.active).length;
+  $("t_behind").textContent=behind.length;
+  $("t_arrears").textContent=money(behind.reduce((s,c)=>s+c.arrears,0));
+  $("t_done").textContent=behind.filter(c=>LATEST[c.pid]).length;
+  if(REPORT_END){ $("periodBanner").hidden=false; $("periodBanner").innerHTML="Report to <b>"+REPORT_END.toLocaleDateString("en-AU")+"</b>. “Behind” = at least one payment short of their own schedule. Ranked by dollars behind."; }
+  let view=CUSTOMERS.filter(c=>(!actOnly||c.active)&&c.arrears>=minArr&&c.arrears>=Math.max(c.instal,1));
+  if(q) view=view.filter(c=>c.name.toLowerCase().includes(q)||c.pid.includes(q));
+  if(hideDone) view=view.filter(c=>!LATEST[c.pid]);
+  const rows=view.map((c,i)=>{
+    const lc=LATEST[c.pid];
+    const fu=lc
+      ? `<span class="pill green">✓ ${esc(lc.outcome)}</span><div class="sub">${new Date(lc.created_at).toLocaleDateString("en-AU")} · ${esc(lc.contacted_by||"")}</div>
+         <button class="btn ghost sm" style="margin-top:4px" onclick="openLog('${c.pid}')">Log again</button>`
+      : `<button class="btn g sm" onclick="openLog('${c.pid}')">Log contact</button>`;
+    const sp=c.streak>=6?'<span class="pill red">'+c.streak+'</span>':(c.streak>=3?'<span class="pill amber">'+c.streak+'</span>':(c.streak>0?'<span class="pill grey">'+c.streak+'</span>':'<span class="muted">0</span>'));
+    return `<tr class="${lc?'done':''}">
+      <td class="muted">${i+1}</td>
+      <td><span class="name">${esc(c.name)}</span><div class="sub">${c.pid}${c.pays+c.fails?` · ${c.pays} paid / ${c.fails} missed`:""}</div></td>
+      <td class="num" style="font-weight:800;color:#b3261e">${money(c.arrears)}</td>
+      <td class="num hideSm">${money(c.instal)}</td>
+      <td class="hideSm">${c.freq}</td>
+      <td class="num hideSm">${c.pctColl}%</td>
+      <td class="num">${sp}</td>
+      <td class="hideSm">${c.lastPaid?c.lastPaid.toLocaleDateString("en-AU"):'<span class="muted">never</span>'}</td>
+      <td>${fu}</td></tr>`;
+  }).join("");
+  $("rows").innerHTML=rows||`<tr><td colspan="9" class="muted" style="padding:20px">No customers match.</td></tr>`;
+}
+
+/* ---------------- LOG CONTACT ---------------- */
+let logPid=null;
+function openLog(pid){
+  const c=CUSTOMERS.find(x=>x.pid===pid); if(!c) return;
+  logPid=pid; $("mName").textContent=c.name;
+  $("mSub").textContent=`${c.pid} · ${money(c.arrears)} behind · ${c.streak} missed in a row`;
+  $("mNote").value=""; $("ov").classList.add("show");
+}
+function closeOv(){ $("ov").classList.remove("show"); logPid=null; }
+async function saveContact(){
+  if(!logPid||!sb) return;
+  const c=CUSTOMERS.find(x=>x.pid===logPid);
+  $("mSave").disabled=true;
+  const row={payer_id:logPid, customer_name:c.name, arrears_amount:Math.round(c.arrears),
+    outcome:$("mOutcome").value, note:$("mNote").value.trim()||null,
+    contacted_by:ME.email, contacted_by_id:ME.id};
+  const {error}=await sb.from("au_contacts").insert(row);
+  $("mSave").disabled=false;
+  if(error){ alert("Couldn't save: "+error.message); return; }
+  closeOv(); await loadContacts(); render(); renderActivity();
+}
+
+/* ---------------- RENDER: ACTIVITY ---------------- */
+function startOfWeek(){ const d=new Date(); d.setHours(0,0,0,0); const dow=(d.getDay()+6)%7; d.setDate(d.getDate()-dow); return d; }
+function renderActivity(){
+  const today=new Date(); today.setHours(0,0,0,0);
+  const wk=startOfWeek();
+  $("a_today").textContent=CONTACTS.filter(c=>new Date(c.created_at)>=today).length;
+  $("a_week").textContent=CONTACTS.filter(c=>new Date(c.created_at)>=wk).length;
+  $("a_total").textContent=CONTACTS.length;
+  $("a_people").textContent=new Set(CONTACTS.map(c=>c.payer_id)).size;
+  const q=($("aSearch").value||"").toLowerCase(), who=$("aWho").value;
+  let view=CONTACTS.filter(c=>(!who||c.contacted_by===who)&&(!q||((c.customer_name||"").toLowerCase().includes(q)||(c.outcome||"").toLowerCase().includes(q)||(c.note||"").toLowerCase().includes(q))));
+  $("aRows").innerHTML=view.map(c=>`<tr>
+    <td>${new Date(c.created_at).toLocaleString("en-AU",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"})}</td>
+    <td>${esc((c.contacted_by||"").split("@")[0])}</td>
+    <td class="name">${esc(c.customer_name||"")}</td>
+    <td class="hideSm muted">${esc(c.payer_id)}</td>
+    <td><span class="pill grey">${esc(c.outcome||"")}</span></td>
+    <td class="num">${c.arrears_amount!=null?money(c.arrears_amount):""}</td>
+    <td class="muted">${esc(c.note||"")}</td></tr>`).join("")
+    || `<tr><td colspan="7" class="muted" style="padding:20px">No contacts logged yet.</td></tr>`;
+}
+
+/* ---------------- TABS + EXPORT ---------------- */
+function showTab(t){
+  $("tabFollow").classList.toggle("on",t==="follow"); $("tabActivity").classList.toggle("on",t==="activity");
+  $("followTab").hidden=t!=="follow"; $("activityTab").hidden=t!=="activity";
+  if(t==="activity") renderActivity();
+}
+function dl(name,rows){
+  const csv=rows.map(r=>r.map(v=>{v=v==null?"":String(v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}).join(",")).join("\n");
+  const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"})); a.download=name; a.click();
+}
+function exportFollow(){
+  const rows=[["rank","name","payer_id","behind","instalment","freq","weeks_on","pct_collected","missed_in_row","last_paid","contacted","outcome","by"]];
+  CUSTOMERS.filter(c=>c.active&&c.arrears>=Math.max(c.instal,1)).forEach((c,i)=>{const lc=LATEST[c.pid];
+    rows.push([i+1,c.name,c.pid,Math.round(c.arrears),Math.round(c.instal),c.freq,c.weeks.toFixed(0),c.pctColl,c.streak,c.lastPaid?c.lastPaid.toISOString().slice(0,10):"",lc?"yes":"",lc?lc.outcome:"",lc?lc.contacted_by:""]);});
+  dl("au_followups.csv",rows);
+}
+function exportActivity(){
+  const rows=[["when","by","customer","payer_id","outcome","behind","note"]];
+  CONTACTS.forEach(c=>rows.push([new Date(c.created_at).toISOString(),c.contacted_by,c.customer_name,c.payer_id,c.outcome,c.arrears_amount,c.note]));
+  dl("au_contact_activity.csv",rows);
+}
+
+boot();
+</script>
+</body>
+</html>
